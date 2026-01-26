@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Red Rose</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #330000, #000);
+      overflow: hidden;
+    }
+
+    model-viewer {
+      width: 90vw;
+      max-width: 400px;
+      height: 80vh;
+    }
+
+    .instructions {
+      position: fixed;
+      bottom: 20px;
+      color: #ff4d4d;
+      font-size: 1.2rem;
+      text-align: center;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D Rose -->
+  <model-viewer id="roseModel"
+                src="https://modelviewer.dev/assets/1fR6R0aGlgP/rose.glb"
+                alt="Interactive Red Rose"
+                camera-controls auto-rotate touch-action="pan-y"
+                style="--poster-color: #000" shadow-intensity="1">
+  </model-viewer>
+
+  <div class="instructions">Touch and drag to rotate the rose 🌹</div>
+
+  <script>
+    // Optional: show alert if model fails to load
+    const rose = document.getElementById('roseModel');
+    rose.addEventListener('error', (event) => {
+      alert('Failed to load 3D rose model. Using online demo fallback.');
+      console.error(event);
+    });
+  </script>
+
+</body>
+</html>
