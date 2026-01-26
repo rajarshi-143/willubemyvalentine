@@ -30,6 +30,24 @@
       text-align: center;
       width: 100%;
     }
+  
+    .message {
+      position: fixed;
+      top: 8%;
+      width: 100%;
+      text-align: center;
+      font-size: 1.4rem;
+      color: #ff7aa2;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      pointer-events: none;
+    }
+
+    .message.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -42,17 +60,61 @@
                 style="--poster-color: #000" shadow-intensity="1">
   </model-viewer>
 
-  <div class="instructions">if I could give you a flower for everytime u were in my mine i would give u this one flower cuz u never left my mind(u can interact with the flower</div>
+  <div id="message" class="message"></div>
+
+  <div class="instructions">Touch and drag to rotate the rose 🌹</div>
 
   <script>
     // Optional: show alert if model fails to load
     const rose = document.getElementById('roseModel');
+
+    const messageEl = document.getElementById('message');
+
+    // Messages for each 90° section
+    const messages = [
+      "I wanted you to turn it first",
+      "Every side of you feels special",
+      "Some things are easier to show than say",
+      "So I made this for you"
+    ];
+
+    let lastIndex = -1;
+    const DEAD_ZONE = 5; // degrees before message appears
+
+    function radToDeg(rad) {
+      return rad * (180 / Math.PI);
+    }
+
+    rose.addEventListener('camera-change', () => {
+      const orbit = rose.getCameraOrbit();
+      if (!orbit) return;
+
+      let angle = radToDeg(orbit.theta);
+      angle = (angle + 360) % 360; // normalize
+
+      // ignore very small rotations so message doesn't appear instantly
+      if (angle < DEAD_ZONE) {
+        messageEl.classList.remove('show');
+        lastIndex = -1;
+        return;
+      }
+
+      const index = Math.floor((angle - DEAD_ZONE) / 90);
+
+      if (index !== lastIndex && messages[index]) {
+        lastIndex = index;
+        messageEl.textContent = messages[index];
+        messageEl.classList.remove('show');
+        requestAnimationFrame(() => messageEl.classList.add('show'));
+      }
+    });
+
+    // Error handling
     rose.addEventListener('error', (event) => {
-      alert('Failed to load 3D rose model. Using online demo fallback.');
+      alert('Failed to load 3D rose model.');
       console.error(event);
     });
   </script>
 
 </body>
 </html>
-
