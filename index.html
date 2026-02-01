@@ -16,7 +16,8 @@
       overflow: hidden;
     }
 
-    model-viewer {
+    model-viewer,
+    #fallbackImage {
       width: 90vw;
       max-width: 400px;
       height: 80vh;
@@ -30,7 +31,7 @@
       text-align: center;
       width: 100%;
     }
-  
+
     .message {
       position: fixed;
       top: 8%;
@@ -56,22 +57,29 @@
   <model-viewer id="roseModel"
                 src="rose.glb"
                 alt="Interactive Red Rose"
-                camera-controls auto-rotate touch-action="pan-y"
-                style="--poster-color: #000" shadow-intensity="1">
+                camera-controls
+                auto-rotate
+                touch-action="pan-y"
+                style="--poster-color: #000"
+                shadow-intensity="1">
   </model-viewer>
 
-  <div id="message" class="message"></div>
+  <!-- Fallback Image (only if GLB fails twice) -->
+  <img id="fallbackImage"
+       src="fallback.jpg"
+       alt="Rose"
+       style="display:none;" />
 
+  <div id="message" class="message"></div>
   <div class="instructions">Touch and drag to rotate the rose 🌹</div>
 
   <script>
-    // Optional: show alert if model fails to load
     const rose = document.getElementById('roseModel');
-
+    const fallbackImage = document.getElementById('fallbackImage');
     const messageEl = document.getElementById('message');
 
-    // Messages for each 90° section
     const messages = [
+      "The rose didn’t load… so here’s the message anyway 🌹",
       "I wanted you to turn it first",
       "Every side of you feels special",
       "Some things are easier to show than say",
@@ -79,7 +87,7 @@
     ];
 
     let lastIndex = -1;
-    const DEAD_ZONE = 5; // degrees before message appears
+    const DEAD_ZONE = 5;
 
     function radToDeg(rad) {
       return rad * (180 / Math.PI);
@@ -90,18 +98,18 @@
       if (!orbit) return;
 
       let angle = radToDeg(orbit.theta);
-      angle = (angle + 360) % 360; // normalize
+      angle = (angle + 360) % 360;
 
-      // ignore very small rotations so message doesn't appear instantly
       if (angle < DEAD_ZONE) {
         messageEl.classList.remove('show');
         lastIndex = -1;
         return;
       }
 
-      const index = Math.floor((angle - DEAD_ZONE) / 90);
+      const section = Math.floor((angle - DEAD_ZONE) / 90);
+      const index = ((section % messages.length) + messages.length) % messages.length;
 
-      if (index !== lastIndex && messages[index]) {
+      if (index !== lastIndex) {
         lastIndex = index;
         messageEl.textContent = messages[index];
         messageEl.classList.remove('show');
@@ -109,10 +117,32 @@
       }
     });
 
-    // Error handling
+    // ===== GLB retry + fallback logic =====
+    let hasRetried = false;
+    const originalSrc = rose.getAttribute('src');
+
     rose.addEventListener('error', (event) => {
-      alert('Failed to load 3D rose model.');
-      console.error(event);
+      if (!hasRetried) {
+        hasRetried = true;
+
+        rose.setAttribute('src', '');
+        setTimeout(() => {
+          rose.setAttribute('src', originalSrc);
+        }, 100);
+
+        console.warn('Retrying 3D model load once...');
+        return;
+      }
+
+      // Second failure → fallback image + special message
+      rose.style.display = 'none';
+      fallbackImage.style.display = 'block';
+
+      lastIndex = -1;
+      messageEl.textContent = messages[0];
+      messageEl.classList.add('show');
+
+      console.error('3D model failed to load after retry:', event);
     });
   </script>
 
