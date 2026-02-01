@@ -20,10 +20,10 @@
 
     model-viewer,
     #fallbackImage {
-      width: 90vw;        /* responsive width */
-      height: 90vh;       /* responsive height */
-      max-width: 600px;   /* optional max width for large screens */
-      max-height: 800px;  /* optional max height */
+      width: 90vw;
+      height: 90vh;
+      max-width: 600px;
+      max-height: 800px;
       display: block;
       margin: auto;
       object-fit: contain; /* maintain aspect ratio */
@@ -56,14 +56,9 @@
       transform: translateY(0);
     }
 
-    /* Smaller text for phones */
     @media (max-width: 500px) {
-      .instructions {
-        font-size: 0.9rem;
-      }
-      .message {
-        font-size: 1rem;
-      }
+      .instructions { font-size: 0.9rem; }
+      .message { font-size: 1rem; }
     }
   </style>
 </head>
@@ -104,7 +99,6 @@
     ];
 
     let lastIndex = -1;
-    const DEAD_ZONE = 5;
 
     function radToDeg(rad) {
       return rad * (180 / Math.PI);
@@ -115,13 +109,8 @@
       fallbackImage.style.display = 'none';
       instructions.style.display = 'block';
       body.style.background = "radial-gradient(circle at center, #330000, #000)";
-    });
-
-    // Hide instructions initially (fallback visible)
-    instructions.style.display = 'none';
-
-    // Only attach messages logic after GLB loads
-    rose.addEventListener('load', () => {
+      
+      // Attach rotation message logic
       rose.addEventListener('camera-change', () => {
         const orbit = rose.getCameraOrbit();
         if (!orbit) return;
@@ -129,14 +118,8 @@
         let angle = radToDeg(orbit.theta);
         angle = (angle + 360) % 360;
 
-        if (angle < DEAD_ZONE) {
-          messageEl.classList.remove('show');
-          lastIndex = -1;
-          return;
-        }
-
-        const section = Math.floor((angle - DEAD_ZONE) / 90);
-        const index = ((section % messages.length) + messages.length) % messages.length;
+        const section = Math.floor(angle / 90);
+        const index = section % messages.length;
 
         if (index !== lastIndex) {
           lastIndex = index;
@@ -146,6 +129,9 @@
         }
       });
     });
+
+    // Hide instructions initially (fallback visible)
+    instructions.style.display = 'none';
 
     // ===== GLB retry + fallback logic =====
     let hasRetried = false;
