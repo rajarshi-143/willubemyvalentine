@@ -12,15 +12,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at center, #330000, #000);
+      background: radial-gradient(circle at center, #330000, #000); /* original red-black gradient */
       overflow: hidden;
+      flex-direction: column;
+      transition: background 0.5s ease; /* smooth bg change if fallback shows */
     }
 
     model-viewer,
     #fallbackImage {
       width: 90vw;
       max-width: 400px;
-      height: 80vh;
+      max-height: 80vh;
+      display: block;
+      margin: auto;
+      object-fit: contain; /* ensures image scales without stretching */
     }
 
     .instructions {
@@ -64,22 +69,23 @@
                 shadow-intensity="1">
   </model-viewer>
 
-  <!-- Fallback Image (only if GLB fails twice) -->
+  <!-- Fallback Image -->
   <img id="fallbackImage"
-       src="fallback.jpg"
+       src="rose-fallback.png"
        alt="Rose"
-       style="display:none;" />
+       style="display:block;" />
 
   <div id="message" class="message"></div>
-  <div class="instructions">Touch and drag to rotate the rose 🌹</div>
+  <div class="instructions" id="instructions">Touch and drag to rotate the rose 🌹</div>
 
   <script>
     const rose = document.getElementById('roseModel');
     const fallbackImage = document.getElementById('fallbackImage');
     const messageEl = document.getElementById('message');
+    const instructions = document.getElementById('instructions');
+    const body = document.body;
 
     const messages = [
-      "The rose didn’t load… so here’s the message anyway 🌹",
       "I wanted you to turn it first",
       "Every side of you feels special",
       "Some things are easier to show than say",
@@ -93,28 +99,41 @@
       return rad * (180 / Math.PI);
     }
 
-    rose.addEventListener('camera-change', () => {
-      const orbit = rose.getCameraOrbit();
-      if (!orbit) return;
+    // Hide fallback image & show instructions if GLB loads successfully
+    rose.addEventListener('load', () => {
+      fallbackImage.style.display = 'none';
+      instructions.style.display = 'block';
+      body.style.background = "radial-gradient(circle at center, #330000, #000)"; // keep original bg
+    });
 
-      let angle = radToDeg(orbit.theta);
-      angle = (angle + 360) % 360;
+    // Hide instructions initially (fallback visible)
+    instructions.style.display = 'none';
 
-      if (angle < DEAD_ZONE) {
-        messageEl.classList.remove('show');
-        lastIndex = -1;
-        return;
-      }
+    // Only attach messages logic after GLB loads
+    rose.addEventListener('load', () => {
+      rose.addEventListener('camera-change', () => {
+        const orbit = rose.getCameraOrbit();
+        if (!orbit) return;
 
-      const section = Math.floor((angle - DEAD_ZONE) / 90);
-      const index = ((section % messages.length) + messages.length) % messages.length;
+        let angle = radToDeg(orbit.theta);
+        angle = (angle + 360) % 360;
 
-      if (index !== lastIndex) {
-        lastIndex = index;
-        messageEl.textContent = messages[index];
-        messageEl.classList.remove('show');
-        requestAnimationFrame(() => messageEl.classList.add('show'));
-      }
+        if (angle < DEAD_ZONE) {
+          messageEl.classList.remove('show');
+          lastIndex = -1;
+          return;
+        }
+
+        const section = Math.floor((angle - DEAD_ZONE) / 90);
+        const index = ((section % messages.length) + messages.length) % messages.length;
+
+        if (index !== lastIndex) {
+          lastIndex = index;
+          messageEl.textContent = messages[index];
+          messageEl.classList.remove('show');
+          requestAnimationFrame(() => messageEl.classList.add('show'));
+        }
+      });
     });
 
     // ===== GLB retry + fallback logic =====
@@ -124,24 +143,19 @@
     rose.addEventListener('error', (event) => {
       if (!hasRetried) {
         hasRetried = true;
-
         rose.setAttribute('src', '');
         setTimeout(() => {
           rose.setAttribute('src', originalSrc);
         }, 100);
-
         console.warn('Retrying 3D model load once...');
         return;
       }
 
-      // Second failure → fallback image + special message
+      // Second failure → fallback image only, hide instructions, change bg to pink
       rose.style.display = 'none';
       fallbackImage.style.display = 'block';
-
-      lastIndex = -1;
-      messageEl.textContent = messages[0];
-      messageEl.classList.add('show');
-
+      instructions.style.display = 'none';
+      body.style.background = "#FFAEC9"; // soft pink background
       console.error('3D model failed to load after retry:', event);
     });
   </script>
