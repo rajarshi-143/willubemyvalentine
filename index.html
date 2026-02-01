@@ -12,27 +12,28 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at center, #330000, #000); /* original red-black gradient */
+      background: radial-gradient(circle at center, #330000, #000); /* original gradient */
       overflow: hidden;
       flex-direction: column;
-      transition: background 0.5s ease; /* smooth bg change if fallback shows */
+      transition: background 0.5s ease;
     }
 
     model-viewer,
     #fallbackImage {
-      width: 90vw;
-      max-width: 400px;
-      max-height: 80vh;
+      width: 90vw;        /* responsive width */
+      height: 90vh;       /* responsive height */
+      max-width: 600px;   /* optional max width for large screens */
+      max-height: 800px;  /* optional max height */
       display: block;
       margin: auto;
-      object-fit: contain; /* ensures image scales without stretching */
+      object-fit: contain; /* maintain aspect ratio */
     }
 
     .instructions {
       position: fixed;
       bottom: 20px;
       color: #ff4d4d;
-      font-size: 1.2rem;
+      font-size: 1rem;
       text-align: center;
       width: 100%;
     }
@@ -42,7 +43,7 @@
       top: 8%;
       width: 100%;
       text-align: center;
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       color: #ff7aa2;
       opacity: 0;
       transform: translateY(10px);
@@ -53,6 +54,16 @@
     .message.show {
       opacity: 1;
       transform: translateY(0);
+    }
+
+    /* Smaller text for phones */
+    @media (max-width: 500px) {
+      .instructions {
+        font-size: 0.9rem;
+      }
+      .message {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
@@ -103,7 +114,7 @@
     rose.addEventListener('load', () => {
       fallbackImage.style.display = 'none';
       instructions.style.display = 'block';
-      body.style.background = "radial-gradient(circle at center, #330000, #000)"; // keep original bg
+      body.style.background = "radial-gradient(circle at center, #330000, #000)";
     });
 
     // Hide instructions initially (fallback visible)
@@ -155,7 +166,7 @@
       rose.style.display = 'none';
       fallbackImage.style.display = 'block';
       instructions.style.display = 'none';
-      body.style.background = "#FFAEC9"; // soft pink background
+      body.style.background = "#FFAEC9";
       console.error('3D model failed to load after retry:', event);
     });
   </script>
