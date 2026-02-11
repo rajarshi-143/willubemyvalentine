@@ -12,7 +12,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at center, #330000, #000); /* original gradient */
+      background: radial-gradient(circle at center, #330000, #000);
       overflow: hidden;
       flex-direction: column;
       transition: background 0.5s ease;
@@ -26,7 +26,7 @@
       max-height: 800px;
       display: block;
       margin: auto;
-      object-fit: contain; /* maintain aspect ratio */
+      object-fit: contain;
     }
 
     .instructions {
@@ -79,7 +79,7 @@
   <img id="fallbackImage"
        src="fallback.png"
        alt="Rose"
-       style="display:block;" />
+       style="display:none;" />
 
   <div id="message" class="message"></div>
   <div class="instructions" id="instructions">Touch and drag to rotate the rose 🌹</div>
@@ -93,45 +93,61 @@
 
     const messages = [
       "I made this page to give you a flower today",
-      "cuz if I had a flower to give you for everytimw you were in my mind",
+      "so if I had a flower to give you for every time you were in my mind",
       "I would've given you this one flower cuz",
       "you never left my mind"
     ];
 
     let lastIndex = -1;
+    let accumulatedRotation = 0;
+    let lastAngle = null;
 
     function radToDeg(rad) {
       return rad * (180 / Math.PI);
     }
 
-    // Hide fallback image & show instructions if GLB loads successfully
+    // Hide instructions and fallback initially
+    instructions.style.display = 'none';
+    fallbackImage.style.display = 'none';
+
+    // When GLB loads successfully
     rose.addEventListener('load', () => {
       fallbackImage.style.display = 'none';
       instructions.style.display = 'block';
       body.style.background = "radial-gradient(circle at center, #330000, #000)";
-      
-      // Attach rotation message logic
+
+      // Track rotation and show messages in sequence
       rose.addEventListener('camera-change', () => {
-        const orbit = rose.getCameraOrbit();
+        const orbit = rose.getCameraOrbit?.();
         if (!orbit) return;
 
         let angle = radToDeg(orbit.theta);
         angle = (angle + 360) % 360;
 
-        const section = Math.floor(angle / 90);
-        const index = section % messages.length;
+        // calculate rotation delta
+        let delta = angle - (lastAngle ?? angle);
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+
+        accumulatedRotation += delta;
+        lastAngle = angle;
+
+        // map rotation to messages
+        const sectionAngle = 360 / messages.length;
+        let index = Math.floor(accumulatedRotation / sectionAngle);
+        index = ((index % messages.length) + messages.length) % messages.length;
 
         if (index !== lastIndex) {
           lastIndex = index;
           messageEl.textContent = messages[index];
+
+          // fade-in effect
           messageEl.classList.remove('show');
-          requestAnimationFrame(() => messageEl.classList.add('show'));
+          void messageEl.offsetWidth; // force reflow
+          messageEl.classList.add('show');
         }
       });
     });
-
-    // Hide instructions initially (fallback visible)
-    instructions.style.display = 'none';
 
     // ===== GLB retry + fallback logic =====
     let hasRetried = false;
@@ -140,15 +156,12 @@
     rose.addEventListener('error', (event) => {
       if (!hasRetried) {
         hasRetried = true;
-        rose.setAttribute('src', '');
-        setTimeout(() => {
-          rose.setAttribute('src', originalSrc);
-        }, 100);
         console.warn('Retrying 3D model load once...');
+        rose.src = originalSrc + '?v=' + Date.now();
         return;
       }
 
-      // Second failure → fallback image only, hide instructions, change bg to pink
+      // Second failure → fallback only
       rose.style.display = 'none';
       fallbackImage.style.display = 'block';
       instructions.style.display = 'none';
@@ -159,4 +172,3 @@
 
 </body>
 </html>
-
