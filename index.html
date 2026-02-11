@@ -98,8 +98,9 @@
       "you never left my mind"
     ];
 
-    let sequenceIndex = 0;  // keeps track of which message should appear next
-    let lastSection = -1;   // tracks which angular section the user is in
+    let lastAngle = null;        // last camera angle
+    let rotationCounter = 0;     // cumulative rotation
+    let sequenceIndex = 0;       // which message to show next
 
     function radToDeg(rad) {
       return rad * (180 / Math.PI);
@@ -115,29 +116,42 @@
       instructions.style.display = 'block';
       body.style.background = "radial-gradient(circle at center, #330000, #000)";
 
-      // Track rotation and show messages in sequence
+      // Track rotation and show messages
       rose.addEventListener('camera-change', () => {
         const orbit = rose.getCameraOrbit?.();
         if (!orbit) return;
 
-        let angle = (radToDeg(orbit.theta) + 360) % 360; // normalize 0-360
+        let angle = (radToDeg(orbit.theta) + 360) % 360;
 
-        const sectionAngle = 360 / messages.length;
-        const currentSection = Math.floor(angle / sectionAngle);
+        if (lastAngle !== null) {
+          let delta = angle - lastAngle;
 
-        // Only update if user enters a new section
-        if (currentSection !== lastSection) {
-          lastSection = currentSection;
+          // handle wrap-around
+          if (delta > 180) delta -= 360;
+          if (delta < -180) delta += 360;
 
-          // Show next message in sequence, always moves forward
-          messageEl.textContent = messages[sequenceIndex];
-          sequenceIndex = (sequenceIndex + 1) % messages.length;
+          rotationCounter += delta;
 
-          // Smooth fade-in
-          messageEl.classList.remove('show');
-          void messageEl.offsetWidth; // force reflow
-          messageEl.classList.add('show');
+          // how many sections have we rotated through
+          const sectionAngle = 360 / messages.length;
+          const steps = Math.floor(Math.abs(rotationCounter) / sectionAngle);
+
+          if (steps > 0) {
+            sequenceIndex = (sequenceIndex + steps) % messages.length;
+
+            // show current message
+            messageEl.textContent = messages[sequenceIndex];
+
+            messageEl.classList.remove('show');
+            void messageEl.offsetWidth; // force reflow
+            messageEl.classList.add('show');
+
+            // subtract counted steps from rotationCounter
+            rotationCounter -= Math.sign(rotationCounter) * steps * sectionAngle;
+          }
         }
+
+        lastAngle = angle;
       });
     });
 
