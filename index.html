@@ -93,14 +93,13 @@
 
     const messages = [
       "I made this page to give you a flower today",
-      "so if I had a flower to give you for every time you were in my mind",
+      "cuz if I had a flower to give you for every time you were in my mind",
       "I would've given you this one flower cuz",
       "you never left my mind"
     ];
 
-    let lastIndex = -1;
-    let accumulatedRotation = 0;
-    let lastAngle = null;
+    let sequenceIndex = 0;  // keeps track of which message should appear next
+    let lastSection = -1;   // tracks which angular section the user is in
 
     function radToDeg(rad) {
       return rad * (180 / Math.PI);
@@ -121,27 +120,20 @@
         const orbit = rose.getCameraOrbit?.();
         if (!orbit) return;
 
-        let angle = radToDeg(orbit.theta);
-        angle = (angle + 360) % 360;
+        let angle = (radToDeg(orbit.theta) + 360) % 360; // normalize 0-360
 
-        // calculate rotation delta
-        let delta = angle - (lastAngle ?? angle);
-        if (delta > 180) delta -= 360;
-        if (delta < -180) delta += 360;
-
-        accumulatedRotation += delta;
-        lastAngle = angle;
-
-        // map rotation to messages
         const sectionAngle = 360 / messages.length;
-        let index = Math.floor(accumulatedRotation / sectionAngle);
-        index = ((index % messages.length) + messages.length) % messages.length;
+        const currentSection = Math.floor(angle / sectionAngle);
 
-        if (index !== lastIndex) {
-          lastIndex = index;
-          messageEl.textContent = messages[index];
+        // Only update if user enters a new section
+        if (currentSection !== lastSection) {
+          lastSection = currentSection;
 
-          // fade-in effect
+          // Show next message in sequence, always moves forward
+          messageEl.textContent = messages[sequenceIndex];
+          sequenceIndex = (sequenceIndex + 1) % messages.length;
+
+          // Smooth fade-in
           messageEl.classList.remove('show');
           void messageEl.offsetWidth; // force reflow
           messageEl.classList.add('show');
